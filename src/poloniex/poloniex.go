@@ -7,8 +7,11 @@ import (
 )
 
 type APIQuery struct {
-	command string
+	command 		string
 	currencyPair	string
+	period			int
+	start 			int
+	end				int
 }
 
 func sendQuery(q APIQuery) (string, error) {
@@ -40,8 +43,22 @@ func sendQuery(q APIQuery) (string, error) {
 
 		return string(ret), nil
 	} else if q.command == "returnTradeHistory" {
-		resp, err := http.Get("https://poloniex.com/public?command=" + "returnTradeHistory" +
+		resp, err := http.Get("https://poloniex.com/public?command=" + q.command +
 			"&currencyPair=" + q.currencyPair)
+		if err != nil {
+			return "", err
+		}
+
+		ret, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return "", err
+		}
+		resp.Body.Close()
+
+		return string(ret), nil
+	} else if q.command == "returnChartData" {
+		resp, err := http.Get("https://poloniex.com/public?command=" + q.command +
+			"&currencyPair=" + q.currencyPair + "&start=" + string(q.start) + "&end=" + string(q.end))
 		if err != nil {
 			return "", err
 		}
@@ -87,8 +104,13 @@ func ReturnMarketTradeHistory(currencyPair string) (string, error) {
 	return sendQuery(q)
 }
 
-func main() {
-	print, _ := ReturnTicker()
-	fmt.Print(print)
-}
+func ReturnChartData(currencyPair string, period int, start int, end int) (string, error) {
+	var q APIQuery
+	q.command = "returnChartData"
+	q.currencyPair = currencyPair
+	q.period = period
+	q.start = start
+	q.end = end
 
+	return sendQuery(q)
+}
